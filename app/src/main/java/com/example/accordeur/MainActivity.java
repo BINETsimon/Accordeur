@@ -1,28 +1,44 @@
 package com.example.accordeur;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.fragment.app.FragmentTransaction;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.accordeur.audio.Notes;
 import com.example.accordeur.audio.calculators.AudioCalculator;
 import com.example.accordeur.audio.core.Callback;
 import com.example.accordeur.audio.core.Recorder;
+import com.example.accordeur.audio.Instrument;
+import com.example.accordeur.pages.FragmentAllInstruments;
+import com.example.accordeur.pages.FragmentShowFrequency;
+import com.example.accordeur.pages.FragmentTuner;
 
-public class MainActivity extends Activity {
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-    private Recorder recorder;
-    private AudioCalculator audioCalculator;
-    private Handler handler;
+public class MainActivity  extends AppCompatActivity {
 
     private TextView textAmplitude;
     private TextView textDecibel;
     private TextView textFrequency;
+    private TextView textDeltaTime;
+
+    private List<Double> mediumFrequency;
+
+    private Instrument currentInstrument;
+
+    private long startTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,48 +56,46 @@ public class MainActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 1);
         }
 
-        recorder = new Recorder(callback);
-        audioCalculator = new AudioCalculator();
-        handler = new Handler(Looper.getMainLooper());
+        //textAmplitude = (TextView) findViewById(R.id.textAmplitude);
+        //textDecibel = (TextView) findViewById(R.id.textDecibel);
+        //textDeltaTime = (TextView) findViewById(R.id.textDeltaTime);
 
-        textAmplitude = (TextView) findViewById(R.id.textAmplitude);
-        textDecibel = (TextView) findViewById(R.id.textDecibel);
-        textFrequency = (TextView) findViewById(R.id.textFrequency);
+
+        startTime = System.currentTimeMillis();
+
+        mediumFrequency = new ArrayList<Double>();
+
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        ft.replace(R.id.fragment_container, new FragmentTuner());
+        ft.commit();
+
+        List<Notes> notes = new ArrayList<>();
+        notes.add(Notes.E);
+        notes.add(Notes.A);
+        notes.add(Notes.D);
+        notes.add(Notes.G);
+        notes.add(Notes.B);
+        currentInstrument = new Instrument("guitar", notes);
     }
 
-    private Callback callback = new Callback() {
-
-        @Override
-        public void onBufferAvailable(byte[] buffer) {
-            audioCalculator.setBytes(buffer);
-            int amplitude = audioCalculator.getAmplitude();
-            double decibel = audioCalculator.getDecibel();
-            double frequency = audioCalculator.getFrequency();
-
-            final String amp = String.valueOf(amplitude + " Amp");
-            final String db = String.valueOf(decibel + " db");
-            final String hz = String.valueOf(frequency + " Hz");
-
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    textAmplitude.setText(amp);
-                    textDecibel.setText(db);
-                    textFrequency.setText(hz);
-                }
-            });
+    public void changeFragment(View view){
+        if(view == findViewById(R.id.imageButtonTune)){
+            Toast.makeText(this, "tuner", Toast.LENGTH_SHORT).show();
+            FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+            ft.replace(R.id.fragment_container, new FragmentTuner());
+            ft.commit();
         }
-    };
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        recorder.start();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        recorder.stop();
+        if(view == findViewById(R.id.imageButtonFrequency)){
+            Toast.makeText(this, "frequency", Toast.LENGTH_SHORT).show();
+            FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+            ft.replace(R.id.fragment_container, new FragmentShowFrequency());
+            ft.commit();
+        }
+        if(view == findViewById(R.id.imageButtonInstruments)){
+            Toast.makeText(this, "instruments", Toast.LENGTH_SHORT).show();
+            FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+            ft.replace(R.id.fragment_container, new FragmentAllInstruments());
+            ft.commit();
+        }
     }
 }
